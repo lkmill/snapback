@@ -1,0 +1,23 @@
+{
+  "name": "snapback",
+  "version": "0.0.0",
+  "homepage": "https://github.com/thecodebureau/snapback",
+  "authors": [
+    "Linus Miller <linus.miller@thecodebureau.com>"
+  ],
+  "description": "DOM Undo/Redo library.",
+  "main": "snapback.js",
+  "keywords": [
+    "Undo",
+    "redo",
+    "dom"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
