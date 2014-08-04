@@ -8,37 +8,45 @@ var Snapback = function(element, config) {
 	this.undoIndex = -1;
 	this.active = false;
 	this.selection = null;
+	this.captureTyping = this.config.typing || false;
 
-	this.timeout = null;
-	this.isTyping = false;
-	this.oldValue = null;
-	this.newValue = null;
+	var timeout = null;
+	var isTyping = false;
+	var target = null;
+	var oldValue = null;
+	var newValue = null;
+	var typeSelection = null;
+
+	function addTypeMutation() {
+		var undo = { type: 'characterData', target: target, oldValue: oldValue, newValue: newValue }; 
+		that.addMutation(undo);
+		oldValue = null;
+		newValue = null;
+		isTyping = false;
+	}
+	function finishedTyping() {
+		clearTimeout(timeout);
+		if(isTyping) addTypeMutation();
+		that.register(typeSelection);
+	}
 	this.observer = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
-			function finishedTyping() {
-				clearTimeout(timeout);
-				var undo = { target: target, oldValue: oldValue, newValue: newValue }; 
-				this.addMutation(undo);
-				setUndo();
-				oldValue = null;
-				newValue = null;
-				isTyping = false;
-			}
 			var fix = false;
 			switch(mutation.type) {
 				case 'childList':
-					//if(isTyping) finishedTyping();
+					if(isTyping) addTypeMutation();
 					if (mutation.target === element) {
 						_.each(mutation.addedNodes, function(node) {
 							if(node.nodeType === 3 || node.nodeName.toLowerCase() === 'div') {
 								fix = true;
+								that.toggle();
+								var svd = S.save(that.element);
 								var content = node.textContent !== '' ? node.textContent : '<br />';
 								var p = O('<p>' + content + '</p>');
-								that.toggle();
 								node.replaceWith(p);
 								that.toggle();
-								S.caret(p, false);
-								that.addMutation({ addedNodes: [ p ], removedNodes: [], target: mutation.target, next: p.nextSibling, prev: p.previousSibling });
+								that.addMutation({ type: 'childList', addedNodes: [ p ], removedNodes: [], target: p.parentNode, nextSibling: p.nextSibling, previousSibling: p.previousSibling });
+								svd.load();
 							}
 						});
 					} else {
@@ -47,15 +55,16 @@ var Snapback = function(element, config) {
 								node.removeAttribute('style');
 								if(node.nodeName.toLowerCase() === 'span') {
 									fix = true;
-									if(node.firstChild) {
+									if(node.firstChild && node.textContent.length > 0) {
 										var prev = node.previousSibling;
 										var oldValue = prev.textContent;
+										var svd = S.save(that.element);
 										that.toggle();
-										prev.textContent = prev.textContent + node.textContent;
+										prev.textContent = oldValue + node.textContent;
 										node.remove();
 										that.toggle();
-										that.addMutation({ target: prev, oldValue: oldValue, newValue: prev.textContent});
-										S.caret({ start: { node: prev, offset: oldValue.length }}, true);
+										svd.load();
+										that.addMutation({ type: 'characterData', target: prev, oldValue: oldValue, newValue: prev.textContent});
 									} else {
 										node.remove();
 									}
@@ -63,22 +72,29 @@ var Snapback = function(element, config) {
 							}
 						});
 					}
-					if(!fix) that.addMutation(mutation);
+					if(!fix && !isTyping) that.addMutation(mutation);
+					break;
+				case 'attributes':
+					that.addMutation(mutation);
 					break;
 				case 'characterData':
-					var undo = { target: mutation.target, oldValue: mutation.oldValue, newValue: mutation.target.textContent }; 
-					that.addMutation(undo);
-					//if(!isTyping) {
-					//	oldValue = mutation.oldValue;
-					//	isTyping = true;
-					//	target = mutation.target;
-					//} else {
-					//	clearTimeout(timeout);
-					//	newValue = mutation.target.textContent;
-					//}
-					//timeout = setTimeout(function() {
-					//	finishedTyping();
-					//}, 1000);
+					if(that.captureTyping) {
+						if(!isTyping) {
+							oldValue = mutation.oldValue;
+							isTyping = true;
+							target = mutation.target;
+						} else {
+							clearTimeout(timeout);
+							newValue = mutation.target.textContent;
+						}
+						typeSelection = S.save(that.element);
+						timeout = setTimeout(function() {
+							finishedTyping();
+						}, 500);
+					} else {
+						var undo = { type: mutation.type, target: mutation.target, oldValue: mutation.oldValue, newValue: mutation.target.textContent }; 
+						that.addMutation(undo);
+					}
 					break;
 			}
 		});    
@@ -90,30 +106,37 @@ Snapback.prototype = {
 		standard: {
 			mutationObserver: { subtree: true, childList: true },
 			selection: false,
-			type: false
+			typing: false
 		},
 		spytext: {
-			mutationObserver: { subtree: true, childList: true, characterData: true, characterDataOldValue: true },
+			mutationObserver: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
 			selection: true,
-			type: true
+			typing: true
+		}
+	},
+	enableCaptureTyping: function() {
+		if(this.config.typing) {
+			this.captureTyping = true;
+		}
+	},
+	disableCaptureTyping: function() {
+		if(this.config.typing) {
+			this.captureTyping = false;
 		}
 	},
 	addMutation: function(mutation) {
-		if(mutation.oldValue) {
-			this.mutations.push({ target: mutation.target, oldValue: mutation.oldValue, newValue: mutation.target.textContent });
-		} else {
-			var addedNodes = [];
-			_.each(mutation.addedNodes, function(node) {
-				addedNodes.push({ target: node, next: mutation.nextSibling, prev: mutation.previousSibling, parent: mutation.target });
-			});
-			var removedNodes = [];
-			_.each(mutation.removedNodes, function(node) {
-				var next = mutation.nextSibling;
-				var prev = mutation.previousSibling;
-				removedNodes.push({ target: node, next: next, prev: prev, parent: mutation.target });
-			});
-			var obj = { addedNodes: addedNodes, removedNodes: removedNodes};
-			this.mutations.push(obj);
+		switch(mutation.type) {
+			case 'characterData': 
+				mutation.newValue = mutation.target.textContent;
+				this.mutations.push(mutation);
+				break;
+			case 'attributes':
+				mutation.newValue = mutation.target.getAttribute(mutation.attributeName);
+				this.mutations.push(mutation);
+				break;
+			case 'childList':
+				this.mutations.push(mutation);
+				break;
 		}
 	},
 	isActive: function() {
@@ -125,21 +148,29 @@ Snapback.prototype = {
 			this.undoRedo(this.undos[this.undoIndex], false);
 		}
 	},
-	register: function() {
+	register: function(selectionAfter) {
 		if(this.active && this.mutations.length > 0) {
+			console.log('registering undo');
 			if(this.undoIndex < this.undos.length - 1) {
 				this.undos = this.undos.slice(0, this.undoIndex + 1);
 			}
-			//undos.push({ selectionBefore: selectionBefore, selectionAfter: S.save(), mutations: mutations });
-			this.undos.push(this.mutations);
+			var selection;
+			if(this.config.selection) {
+				var svd = S.save(this.element);
+				selection = {};
+				selection.before = this.selection || svd;
+				selection.after = selectionAfter || svd;
+			} else {
+				selection = null;
+			}
+			this.undos.push({ selection: selection, mutations: this.mutations });
 			this.mutations = [];
 			this.undoIndex = this.undos.length -1;
 		}
-		//selectionBefore = S.save();
+		this.setSelection();
 	},
-	setSelection: function(selection) {
-		this.selection = selection ? selection : S.save();
-		console.log(this.selection);
+	setSelection: function() {
+		this.selection = S.save(this.element);
 	},
 	size: function() {
 		return this.undos.length;
@@ -157,26 +188,37 @@ Snapback.prototype = {
 	},
 	undoRedo: function(undo, isUndo) {
 		this.toggle();
-		//var mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
-		var mutations = isUndo ? undo.slice(0).reverse() : undo;
+		var mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
 		for(var s = 0; s < mutations.length; s++) {
-			if(mutations[s].oldValue) {
-				mutations[s].target.textContent = isUndo ? mutations[s].oldValue : mutations[s].newValue;
-			} else {
-				var addNodes = isUndo ? mutations[s].removedNodes : mutations[s].addedNodes;
-				var removeNodes = isUndo ? mutations[s].addedNodes : mutations[s].removedNodes;
-				for(var j = 0; j < addNodes.length; j++) {
-					var node = addNodes[j];
-					if (node.next) {
-						node.parent.insertBefore(node.target, node.next);
-					} else {
-						node.parent.append(node.target);
+			var mutation = mutations[s];
+			switch(mutation.type) {
+				case 'characterData':
+					mutation.target.textContent = isUndo ? mutation.oldValue : mutation.newValue;
+					break;
+				case 'attributes':
+					mutation.target.attr(mutation.attributeName, isUndo ? mutation.oldValue : mutation.newValue);
+					break;
+				case 'childList':
+					var addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
+					var removeNodes = isUndo ? mutation.addedNodes : mutation.removedNodes;
+					for(var j = 0; j < addNodes.length; j++) {
+						var node = addNodes[j];
+						if (mutation.nextSibling) {
+							mutation.nextSibling.before(addNodes[j]);
+							//node.parent.insertBefore(node.target, node.next);
+						} else {
+							mutation.target.append(addNodes[j]);
+						}
 					}
-				}
-				for(var i in removeNodes) {
-					removeNodes[i].target.remove();
-				}
+					for(var i = 0; i < removeNodes.length; i++) {
+						removeNodes[i].remove();
+					}
+					break;
 			}
+		}
+		if(this.config.selection) {
+			if(isUndo) undo.selection.before.load();
+			else undo.selection.after.load();
 		}
 		this.toggle();
 	}
