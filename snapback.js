@@ -150,7 +150,6 @@ Snapback.prototype = {
 	},
 	register: function(selectionAfter) {
 		if(this.active && this.mutations.length > 0) {
-			console.log('registering undo');
 			if(this.undoIndex < this.undos.length - 1) {
 				this.undos = this.undos.slice(0, this.undoIndex + 1);
 			}
