@@ -6,129 +6,49 @@ var Snapback = function(element, config) {
 	this.undos = [];
 	this.mutations = [];
 	this.undoIndex = -1;
-	this.active = false;
-	this.selection = null;
-	this.captureTyping = this.config.typing || false;
+	this.enabled = false;
+	this.selectron = null;
 
-	var timeout = null;
-	var isTyping = false;
-	var target = null;
-	var oldValue = null;
-	var newValue = null;
-	var typeSelection = null;
-
-	function addTypeMutation() {
-		var undo = { type: 'characterData', target: target, oldValue: oldValue, newValue: newValue }; 
-		that.addMutation(undo);
-		oldValue = null;
-		newValue = null;
-		isTyping = false;
-	}
-	function finishedTyping() {
-		clearTimeout(timeout);
-		if(isTyping) addTypeMutation();
-		that.register(typeSelection);
-	}
 	this.observer = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
-			var fix = false;
 			switch(mutation.type) {
 				case 'childList':
-					if(isTyping) addTypeMutation();
-					if (mutation.target === element) {
-						_.each(mutation.addedNodes, function(node) {
-							if(node.nodeType === 3 || node.nodeName.toLowerCase() === 'div') {
-								fix = true;
-								that.toggle();
-								var svd = S.save(that.element);
-								var content = node.textContent !== '' ? node.textContent : '<br />';
-								var p = O('<p>' + content + '</p>');
-								node.replaceWith(p);
-								that.toggle();
-								that.addMutation({ type: 'childList', addedNodes: [ p ], removedNodes: [], target: p.parentNode, nextSibling: p.nextSibling, previousSibling: p.previousSibling });
-								svd.load();
-							}
-						});
-					} else {
-						_.each(mutation.addedNodes, function(node) {
-							if(node.nodeType ===1 ) {
-								node.removeAttribute('style');
-								if(node.nodeName.toLowerCase() === 'span') {
-									fix = true;
-									if(node.firstChild && node.textContent.length > 0) {
-										var prev = node.previousSibling;
-										var oldValue = prev.textContent;
-										var svd = S.save(that.element);
-										that.toggle();
-										prev.textContent = oldValue + node.textContent;
-										node.remove();
-										that.toggle();
-										svd.load();
-										that.addMutation({ type: 'characterData', target: prev, oldValue: oldValue, newValue: prev.textContent});
-									} else {
-										node.remove();
-									}
-								}
-							}
-						});
-					}
-					if(!fix && !isTyping) that.addMutation(mutation);
+					var fix = (that.config.typing) ? that.fixType(mutation) : false;
+					if(!fix) that.addMutation(mutation);
 					break;
 				case 'attributes':
 					that.addMutation(mutation);
 					break;
 				case 'characterData':
-					if(that.captureTyping) {
-						if(!isTyping) {
-							oldValue = mutation.oldValue;
-							isTyping = true;
-							target = mutation.target;
-						} else {
-							clearTimeout(timeout);
-							newValue = mutation.target.textContent;
-						}
-						typeSelection = S.save(that.element);
-						timeout = setTimeout(function() {
-							finishedTyping();
-						}, 500);
-					} else {
-						var undo = { type: mutation.type, target: mutation.target, oldValue: mutation.oldValue, newValue: mutation.target.textContent }; 
-						that.addMutation(undo);
-					}
+					that.addMutation(mutation);
 					break;
 			}
 		});    
 	});
-
 };
 Snapback.prototype = {
 	presets: {
 		standard: {
 			mutationObserver: { subtree: true, childList: true },
-			selection: false,
+			selectron: false,
 			typing: false
 		},
 		spytext: {
 			mutationObserver: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
-			selection: true,
+			selectron: true,
 			typing: true
-		}
-	},
-	enableCaptureTyping: function() {
-		if(this.config.typing) {
-			this.captureTyping = true;
-		}
-	},
-	disableCaptureTyping: function() {
-		if(this.config.typing) {
-			this.captureTyping = false;
 		}
 	},
 	addMutation: function(mutation) {
 		switch(mutation.type) {
 			case 'characterData': 
 				mutation.newValue = mutation.target.textContent;
-				this.mutations.push(mutation);
+				var lastIndex = this.mutations.length - 1;
+				if(lastIndex > -1 && this.mutations[lastIndex].type === 'characterData' && this.mutations[lastIndex].target === mutation.target && this.mutations[lastIndex].newValue === mutation.oldValue) {
+					this.mutations[lastIndex].newValue = mutation.newValue;
+				} else {
+					this.mutations.push(mutation);
+				}
 				break;
 			case 'attributes':
 				mutation.newValue = mutation.target.getAttribute(mutation.attributeName);
@@ -139,54 +59,118 @@ Snapback.prototype = {
 				break;
 		}
 	},
-	isActive: function() {
-		return this.active;
-	},
 	redo: function() {
-		if(this.active && this.undoIndex < this.undos.length - 1) {
+		if(this.enabled && this.undoIndex < this.undos.length - 1) {
 			this.undoIndex++;
 			this.undoRedo(this.undos[this.undoIndex], false);
 		}
 	},
-	register: function(selectionAfter) {
-		if(this.active && this.mutations.length > 0) {
+	fixType: function(mutation){
+		var fix = false;
+		var that = this;
+		this.disable();
+		if (mutation.target === this.element) {
+			_.each(mutation.addedNodes, function(node) {
+				if(node.nodeType === 3 || node.nodeName.toLowerCase() === 'div') {
+					fix = true;
+					var content = node.textContent !== '' ? node.textContent : '<br />';
+					var p = O('<p>' + content + '</p>');
+					node.replaceWith(p);
+					S.caret(p, true);
+					that.addMutation({ type: 'childList', addedNodes: [ p ], removedNodes: [], target: p.parentNode, nextSibling: p.nextSibling, previousSibling: p.previousSibling });
+				}
+			});
+		} else {
+			_.each(mutation.addedNodes, function(node) {
+				if(node.nodeType ===1 ) {
+					node.removeAttribute('style');
+					if(node.nodeName.toLowerCase() === 'span') {
+						var selectron = that.getSelectron();
+						fix = true;
+						if(node.firstChild && node.textContent.length > 0) {
+							var prev = node.previousSibling;
+							var next = node.nextSibling;
+							node.remove();
+							if(prev) {
+								var oldValue = prev.textContent;
+								prev.textContent = oldValue + node.textContent;
+								that.addMutation({ type: 'characterData', target: prev, oldValue: oldValue, newValue: prev.textContent});
+							} else {
+								while(node.firstChild) {
+									var child = node.firstChild;
+									if(next) {
+										next.before(node.firstChild);
+									} else {
+										mutation.target.append(child);
+									}
+									that.addMutation({ type: 'childList', addedNodes: [ child ], removedNodes: [], target: mutation.target, previousSibling: null, nextSibling: next });
+								}
+							}
+						} else {
+							node.remove();
+						}
+						selectron.load();
+					}
+				}
+			});
+		}
+		this.enable();
+		return fix;
+	},
+	register: function() {
+		if(this.enabled && this.mutations.length > 0) {
 			if(this.undoIndex < this.undos.length - 1) {
 				this.undos = this.undos.slice(0, this.undoIndex + 1);
 			}
-			var selection;
-			if(this.config.selection) {
-				var svd = S.save(this.element);
-				selection = {};
-				selection.before = this.selection || svd;
-				selection.after = selectionAfter || svd;
+			var selectron;
+			if(this.config.selectron) {
+				var currentSelectron = this.getSelectron();
+				selectron = {};
+				selectron.before = this.selectron;
+				selectron.after = currentSelectron;
+				this.setSelectron(currentSelectron);
 			} else {
-				selection = null;
+				selectron = null;
 			}
-			this.undos.push({ selection: selection, mutations: this.mutations });
+			this.undos.push({ selectron: selectron, mutations: this.mutations });
 			this.mutations = [];
 			this.undoIndex = this.undos.length -1;
 		}
-		this.setSelection();
 	},
-	setSelection: function() {
-		this.selection = S.save(this.element);
+	setSelectron: function(selectron) {
+		this.selectron = selectron || this.getSelectron();
+	},
+	getSelectron: function() {
+		if(S.s().rangeCount > 0) {
+			//return S.save(this.element);
+			return S.save('[spytext-field] > *, [spytext-field]');
+		} else {
+			return S.save(this.element, 0);
+		}
 	},
 	size: function() {
 		return this.undos.length;
 	},
-	toggle: function() {
-		if(this.active) this.observer.disconnect();
-		else this.observer.observe(this.element, this.config.mutationObserver);
-		this.active = !this.active;
+	enable: function() {
+		if(!this.enabled) {
+			this.observer.observe(this.element, this.config.mutationObserver);
+			this.enabled = true;
+		}
+	},
+	disable: function() {
+		if(this.enabled) {
+			this.observer.disconnect();
+			this.enabled = false;
+		}
 	},
 	undo: function() {
-		if(this.active && this.undoIndex >= 0) {
+		if(this.enabled && this.undoIndex >= 0) {
 			this.undoRedo(this.undos[this.undoIndex], true);
 			this.undoIndex--;
 		}
 	},
 	undoRedo: function(undo, isUndo) {
-		this.toggle();
+		this.disable();
 		var mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
 		for(var s = 0; s < mutations.length; s++) {
 			var mutation = mutations[s];
@@ -215,10 +199,10 @@ Snapback.prototype = {
 					break;
 			}
 		}
-		if(this.config.selection) {
-			if(isUndo) undo.selection.before.load();
-			else undo.selection.after.load();
+		if(this.config.selectron) {
+			if(isUndo) undo.selectron.before.load();
+			else undo.selectron.after.load();
 		}
-		this.toggle();
+		this.enable();
 	}
 };
