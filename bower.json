@@ -6,7 +6,7 @@
     "Linus Miller <linus.miller@thecodebureau.com>"
   ],
   "description": "DOM Undo/Redo library.",
-  "main": "snapback.js",
+  "main": "./snapback.js",
   "keywords": [
     "Undo",
     "redo",
