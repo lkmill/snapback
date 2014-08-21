@@ -180,7 +180,6 @@ Snapback.prototype = {
 					for(var j = 0; j < addNodes.length; j++) {
 						if (mutation.nextSibling) {
 							mutation.nextSibling.before(addNodes[j]);
-							//node.parent.insertBefore(node.target, node.next);
 						} else {
 							mutation.target.append(addNodes[j]);
 						}
