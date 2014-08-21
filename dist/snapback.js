@@ -123,7 +123,6 @@ Snapback.prototype = {
 			}
 			var positrons;
 			if(this.selectron) {
-				var currentPositron = this.getPositron();
 				positrons = {};
 				positrons.before = this.positron;
 				positrons.after = this.getPositron();
@@ -179,7 +178,6 @@ Snapback.prototype = {
 					var addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
 					var removeNodes = isUndo ? mutation.addedNodes : mutation.removedNodes;
 					for(var j = 0; j < addNodes.length; j++) {
-						var node = addNodes[j];
 						if (mutation.nextSibling) {
 							mutation.nextSibling.before(addNodes[j]);
 							//node.parent.insertBefore(node.target, node.next);
