@@ -1,13 +1,14 @@
 var Snapback = function(element, config) {
 	var that = this;
 
-	this.config = typeof config === 'string' ? this.presets[config] : config;
+	this.config = typeof config.preset === 'string' ? _.merge(this.presets[config.preset], config) : config;
 	this.element = element;
 	this.undos = [];
 	this.mutations = [];
 	this.undoIndex = -1;
 	this.enabled = false;
-	this.selectron = null;
+	this.selectron = this.config.selectron ? this.config.selectron : null;
+	this.positron = this.selectron ? this.getPositron() : null;
 
 	this.observer = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
@@ -30,12 +31,10 @@ Snapback.prototype = {
 	presets: {
 		standard: {
 			mutationObserver: { subtree: true, childList: true },
-			selectron: false,
 			typing: false
 		},
 		spytext: {
 			mutationObserver: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
-			selectron: true,
 			typing: true
 		}
 	},
@@ -76,7 +75,7 @@ Snapback.prototype = {
 					var content = node.textContent !== '' ? node.textContent : '<br />';
 					var p = O('<p>' + content + '</p>');
 					node.replaceWith(p);
-					S.caret(p, true);
+					that.selectron.set(p, p.textContent.length);
 					that.addMutation({ type: 'childList', addedNodes: [ p ], removedNodes: [], target: p.parentNode, nextSibling: p.nextSibling, previousSibling: p.previousSibling });
 				}
 			});
@@ -85,12 +84,12 @@ Snapback.prototype = {
 				if(node.nodeType ===1 ) {
 					node.removeAttribute('style');
 					if(node.nodeName.toLowerCase() === 'span') {
-						var selectron = that.getSelectron();
+						var positron = that.getPositron();
 						fix = true;
 						if(node.firstChild && node.textContent.length > 0) {
 							var prev = node.previousSibling;
 							var next = node.nextSibling;
-							node.remove();
+							node.vanish();
 							if(prev) {
 								var oldValue = prev.textContent;
 								prev.textContent = oldValue + node.textContent;
@@ -107,9 +106,9 @@ Snapback.prototype = {
 								}
 							}
 						} else {
-							node.remove();
+							node.vanish();
 						}
-						selectron.load();
+						positron.restore();
 					}
 				}
 			});
@@ -122,31 +121,26 @@ Snapback.prototype = {
 			if(this.undoIndex < this.undos.length - 1) {
 				this.undos = this.undos.slice(0, this.undoIndex + 1);
 			}
-			var selectron;
-			if(this.config.selectron) {
-				var currentSelectron = this.getSelectron();
-				selectron = {};
-				selectron.before = this.selectron;
-				selectron.after = currentSelectron;
-				this.setSelectron(currentSelectron);
+			var positrons;
+			if(this.selectron) {
+				var currentPositron = this.getPositron();
+				positrons = {};
+				positrons.before = this.positron;
+				positrons.after = this.getPositron();
 			} else {
-				selectron = null;
+				positrons = null;
 			}
-			this.undos.push({ selectron: selectron, mutations: this.mutations });
+			this.undos.push({ positrons: positrons, mutations: this.mutations });
 			this.mutations = [];
 			this.undoIndex = this.undos.length -1;
 		}
+		if(this.selectron) this.setPositron();
 	},
-	setSelectron: function(selectron) {
-		this.selectron = selectron || this.getSelectron();
+	setPositron: function(positron) {
+		this.positron = positron || this.getPositron();
 	},
-	getSelectron: function() {
-		if(S.s().rangeCount > 0) {
-			//return S.save(this.element);
-			return S.save('[spytext-field] > *, [spytext-field]');
-		} else {
-			return S.save(this.element, 0);
-		}
+	getPositron: function() {
+		return this.selectron.get();
 	},
 	size: function() {
 		return this.undos.length;
@@ -194,14 +188,14 @@ Snapback.prototype = {
 						}
 					}
 					for(var i = 0; i < removeNodes.length; i++) {
-						removeNodes[i].remove();
+						removeNodes[i].vanish();
 					}
 					break;
 			}
 		}
 		if(this.config.selectron) {
-			if(isUndo) undo.selectron.before.load();
-			else undo.selectron.after.load();
+			if(isUndo) undo.positrons.before.restore();
+			else undo.positrons.after.restore();
 		}
 		this.enable();
 	}

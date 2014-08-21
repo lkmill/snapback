@@ -6,7 +6,7 @@
     "Linus Miller <linus.miller@thecodebureau.com>"
   ],
   "description": "DOM Undo/Redo library.",
-  "main": "./snapback.js",
+  "main": "dist/snapback.js",
   "keywords": [
     "Undo",
     "redo",
@@ -19,5 +19,9 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "mod": "~0.1.0",
+    "lodash": "~2.4.1"
+  }
 }
