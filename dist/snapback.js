@@ -1,4 +1,6 @@
 var Snapback = function(element, config) {
+	var MO = typeof MutationObserver !== 'undefined' ? MutationObserver : (typeof WebKitMutationObserver !== 'undefined' ? WebKitMutationObserver : undefined);
+	if(!MO) return;
 	var that = this;
 
 	this.config = typeof config.preset === 'string' ? _.merge(this.presets[config.preset], config) : config;
@@ -10,19 +12,24 @@ var Snapback = function(element, config) {
 	this.selectron = this.config.selectron ? this.config.selectron : null;
 	this.positron = this.selectron ? this.getPositron() : null;
 
-	this.observer = new MutationObserver(function(mutations) {
+	this.observer = new MO(function(mutations) {
 		mutations.forEach(function(mutation) {
 			switch(mutation.type) {
 				case 'childList':
-					var fix = (that.config.typing) ? that.fixType(mutation) : false;
-					if(!fix) that.addMutation(mutation);
-					break;
 				case 'attributes':
-					that.addMutation(mutation);
-					break;
 				case 'characterData':
 					that.addMutation(mutation);
 					break;
+				//case 'childList':
+				//	var fix = (that.config.typing) ? that.fixType(mutation) : false;
+				//	if(!fix) that.addMutation(mutation);
+				//	break;
+				//case 'attributes':
+				//	that.addMutation(mutation);
+				//	break;
+				//case 'characterData':
+				//	that.addMutation(mutation);
+				//	break;
 			}
 		});    
 	});
@@ -30,12 +37,12 @@ var Snapback = function(element, config) {
 Snapback.prototype = {
 	presets: {
 		standard: {
-			mutationObserver: { subtree: true, childList: true },
-			typing: false
+			mutationObserver: { subtree: true, childList: true }
+			//typing: false
 		},
 		spytext: {
-			mutationObserver: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
-			typing: true
+			mutationObserver: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true }
+			//typing: true
 		}
 	},
 	addMutation: function(mutation) {
@@ -64,59 +71,62 @@ Snapback.prototype = {
 			this.undoRedo(this.undos[this.undoIndex], false);
 		}
 	},
-	fixType: function(mutation){
-		var fix = false;
-		var that = this;
-		this.disable();
-		if (mutation.target === this.element) {
-			_.each(mutation.addedNodes, function(node) {
-				if(node.nodeType === 3 || node.nodeName.toLowerCase() === 'div') {
-					fix = true;
-					var content = node.textContent !== '' ? node.textContent : '<br />';
-					var p = O('<p>' + content + '</p>');
-					node.replaceWith(p);
-					that.selectron.set(p, p.textContent.length);
-					that.addMutation({ type: 'childList', addedNodes: [ p ], removedNodes: [], target: p.parentNode, nextSibling: p.nextSibling, previousSibling: p.previousSibling });
-				}
-			});
-		} else {
-			_.each(mutation.addedNodes, function(node) {
-				if(node.nodeType ===1 ) {
-					node.removeAttribute('style');
-					if(node.nodeName.toLowerCase() === 'span') {
-						var positron = that.getPositron();
-						fix = true;
-						if(node.firstChild && node.textContent.length > 0) {
-							var prev = node.previousSibling;
-							var next = node.nextSibling;
-							node.vanish();
-							if(prev) {
-								var oldValue = prev.textContent;
-								prev.textContent = oldValue + node.textContent;
-								that.addMutation({ type: 'characterData', target: prev, oldValue: oldValue, newValue: prev.textContent});
-							} else {
-								while(node.firstChild) {
-									var child = node.firstChild;
-									if(next) {
-										next.before(node.firstChild);
-									} else {
-										mutation.target.append(child);
-									}
-									that.addMutation({ type: 'childList', addedNodes: [ child ], removedNodes: [], target: mutation.target, previousSibling: null, nextSibling: next });
-								}
-							}
-						} else {
-							node.vanish();
-						}
-						positron.restore();
-					}
-				}
-			});
-		}
-		this.enable();
-		return fix;
-	},
+	//fixType: function(mutation){
+	//	var fix = false;
+	//	var that = this;
+	//	this.disable();
+	//	if (mutation.target === this.element) {
+	//		_.each(mutation.addedNodes, function(node) {
+	//			if(node.nodeType === 3 || node.nodeName.toLowerCase() === 'div') {
+	//				console.log('fixing div');
+	//				fix = true;
+	//				var content = node.textContent !== '' ? node.textContent : '<br />';
+	//				var p = O('<p>' + content + '</p>');
+	//				node.replaceWith(p);
+	//				that.selectron.set(p, p.textContent.length);
+	//				that.addMutation({ type: 'childList', addedNodes: [ p ], removedNodes: [], target: p.parentNode, nextSibling: p.nextSibling, previousSibling: p.previousSibling });
+	//			}
+	//		});
+	//	} else {
+	//		_.each(mutation.addedNodes, function(node) {
+	//			if(node.nodeType ===1 ) {
+	//				node.removeAttribute('style');
+	//				if(node.nodeName.toLowerCase() === 'span') {
+	//					console.log('fixing span');
+	//					var positron = that.getPositron();
+	//					fix = true;
+	//					if(node.firstChild && node.textContent.length > 0) {
+	//						var prev = node.previousSibling;
+	//						var next = node.nextSibling;
+	//						node.vanish();
+	//						if(prev) {
+	//							var oldValue = prev.textContent;
+	//							prev.textContent = oldValue + node.textContent;
+	//							that.addMutation({ type: 'characterData', target: prev, oldValue: oldValue, newValue: prev.textContent});
+	//						} else {
+	//							while(node.firstChild) {
+	//								var child = node.firstChild;
+	//								if(next) {
+	//									next.before(node.firstChild);
+	//								} else {
+	//									mutation.target.append(child);
+	//								}
+	//								that.addMutation({ type: 'childList', addedNodes: [ child ], removedNodes: [], target: mutation.target, previousSibling: null, nextSibling: next });
+	//							}
+	//						}
+	//					} else {
+	//						node.vanish();
+	//					}
+	//					positron.restore();
+	//				}
+	//			}
+	//		});
+	//	}
+	//	this.enable();
+	//	return fix;
+	//},
 	register: function() {
+		if(!this.element) return;
 		if(this.enabled && this.mutations.length > 0) {
 			if(this.undoIndex < this.undos.length - 1) {
 				this.undos = this.undos.slice(0, this.undoIndex + 1);
@@ -136,15 +146,19 @@ Snapback.prototype = {
 		if(this.selectron) this.setPositron();
 	},
 	setPositron: function(positron) {
+		if(!this.element) return;
 		this.positron = positron || this.getPositron();
 	},
 	getPositron: function() {
+		if(!this.element) return;
 		return this.selectron.get();
 	},
 	size: function() {
+		if(!this.element) return;
 		return this.undos.length;
 	},
 	enable: function() {
+		if(!this.element) return;
 		if(!this.enabled) {
 			this.observer.observe(this.element, this.config.mutationObserver);
 			this.enabled = true;
@@ -163,7 +177,11 @@ Snapback.prototype = {
 		}
 	},
 	undoRedo: function(undo, isUndo) {
+		if(!this.element) return;
 		this.disable();
+		if(this.mutations.length > 0) {
+			this.register();
+		}
 		var mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
 		for(var s = 0; s < mutations.length; s++) {
 			var mutation = mutations[s];
