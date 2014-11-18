@@ -1,0 +1,25 @@
+{
+  "name": "tcb-snapback",
+  "version": "0.2.0-pre",
+  "description": "",
+  "main": "./lib/snapback.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thecodebureau/snapback.git"
+  },
+  "keywords": [
+    "Undo",
+    "redo",
+    "node",
+    "commonjs"
+  ],
+  "author": "The Code Bureau <info@thecodebureau.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/thecodebureau/snapback/issues"
+  },
+  "homepage": "https://github.com/thecodebureau/snapback"
+}
