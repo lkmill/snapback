@@ -1,6 +1,6 @@
 {
   "name": "tcb-snapback",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Undo/redo",
   "main": "./lib/snapback.js",
   "scripts": {
@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/thecodebureau/snapback",
   "dependencies": {
-    "tcb-fork-lodash": "2.5.0"
+    "tcb-fork-lodash": "^2.5.1"
   }
 }
