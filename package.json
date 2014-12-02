@@ -1,6 +1,6 @@
 {
   "name": "tcb-snapback",
-  "version": "0.2.0-pre",
+  "version": "0.2.0",
   "description": "Undo/redo",
   "main": "./lib/snapback.js",
   "scripts": {
