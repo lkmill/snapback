@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/thecodebureau/snapback",
   "dependencies": {
-    "tcb-fork-lodash": "file:../../../../../tmp/npm-10405-0fbdbbb4/1417290759435-0.08681665314361453/d31d7e5b7aa97fbeeac81f03648b9a80e948fe36"
+    "tcb-fork-lodash": "thecodebureau/fork-lodash#sup3rman"
   }
 }
