@@ -21,8 +21,5 @@
   "bugs": {
     "url": "https://github.com/thecodebureau/snapback/issues"
   },
-  "homepage": "https://github.com/thecodebureau/snapback",
-  "dependencies": {
-    "tcb-fork-lodash": "^2.5.1"
-  }
+  "homepage": "https://github.com/thecodebureau/snapback"
 }
