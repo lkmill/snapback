@@ -1,6 +1,6 @@
 {
   "name": "snapback",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Undo/redo",
   "main": "./lib/snapback.js",
   "scripts": {
