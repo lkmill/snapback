@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/thecodebureau/snapback/issues"
   },
-  "homepage": "https://github.com/thecodebureau/snapback"
+  "homepage": "https://github.com/thecodebureau/snapback",
+  "dependencies": {
+    "lodash": "^4.6.1"
+  }
 }
