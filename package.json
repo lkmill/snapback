@@ -16,7 +16,7 @@
     "node",
     "commonjs"
   ],
-  "author": "Linus Miller <lohfu@lohfu.io> (https://lohfu.io)",
+  "author": "Linus Miller <lohfu@lohfu.io> (https://lohfu.io/)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/lohfu/snapback/issues"
