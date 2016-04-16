@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Snapback is a DOM undo and redo library. It uses
  * a MutationObserver to observe changes to a DOM Element's sub tree.
@@ -5,10 +7,10 @@
  * these mutations can be grouped together and saved as an undo.
  * Snapback can then be used to traverse back and forth in the undo history.
  *
- * @module snapback 
+ * @module snapback
  */
 
-var bindAll = require('lodash/bindAll'),
+const bindAll = require('lodash/bindAll'),
   isFunction = require('lodash/isFunction'),
   assign = require('lodash/assign'),
   toArray = require('lodash/toArray'),
@@ -23,12 +25,12 @@ var bindAll = require('lodash/bindAll'),
  * @param {Element} element - The element who's subTree we want to observe for changes
  * @param {Object} options - Should contain a store and restore function to save custom data.
  **/
-var Snapback = function(element, options) {
+const Snapback = function (element, options) {
   // determine which version of MutationObserver to use
-  var MO = typeof MutationObserver !== 'undefined' ? MutationObserver : (typeof WebKitMutationObserver !== 'undefined' ? WebKitMutationObserver : undefined);
+  const MO = typeof MutationObserver !== 'undefined' ? MutationObserver : (typeof WebKitMutationObserver !== 'undefined' ? WebKitMutationObserver : undefined);
 
   // stop everything if no MutationObserver is found
-  if(!MO) return;
+  if (!MO) return;
 
   // bind `this` to the instance snapback instance inside addMutation,
   // see line 57
@@ -38,7 +40,7 @@ var Snapback = function(element, options) {
   assign(this, {
     // this is the config pass to the observe function on the Mutation Observer
     config: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
-    element: element,
+    element,
     // the undo stack is a collection of Undo objects
     undos: [],
     // the mutations stack holds all mutations that have not yet been registered in an undo
@@ -48,8 +50,8 @@ var Snapback = function(element, options) {
   }, options);
 
   // instantiate a MutationObserver (this will be started and stopped in this.enable and this.disable respectively
-  this.observer = new MO(function(mutations) {
-    mutations.forEach(this.addMutation);    
+  this.observer = new MO(function (mutations) {
+    mutations.forEach(this.addMutation);
   }.bind(this));
 };
 
@@ -59,20 +61,20 @@ Snapback.prototype = {
    *
    * @param {MutationRecord} mutation - The mutation to the mutations array
    */
-  addMutation: function(mutation) {
-    switch(mutation.type) {
-      case 'characterData': 
+  addMutation(mutation) {
+    switch (mutation.type) {
+      case 'characterData':
         // save the new value of the textNode
         mutation.newValue = mutation.target.textContent;
 
-        var lastMutation = last(this.mutations);
+        const lastMutation = last(this.mutations);
 
-        if(lastMutation && lastMutation.type === 'characterData' && lastMutation.target === mutation.target && lastMutation.newValue === mutation.oldValue) {
+        if (lastMutation && lastMutation.type === 'characterData' && lastMutation.target === mutation.target && lastMutation.newValue === mutation.oldValue) {
           // current and last mutations were characterData mutations on the same textNode.
           // simply set newValue of lastMutation to newValue of current
           lastMutation.newValue = mutation.newValue;
           return;
-        } 
+        }
         break;
       case 'attributes':
         // save new value of the updated attribute
@@ -89,8 +91,8 @@ Snapback.prototype = {
    * any mutations in the mutation stack. Essentially
    * this just callc MutationObserver.disconnect().
    */
-  disable: function() {
-    if(this.enabled) {
+  disable() {
+    if (this.enabled) {
       this.observer.disconnect();
       this.enabled = false;
     }
@@ -100,8 +102,8 @@ Snapback.prototype = {
    * Enable observering mutations to the DOM. Essentially
    * just calls MutationObserver.observe().
    */
-  enable: function() {
-    if(!this.enabled) {
+  enable() {
+    if (!this.enabled) {
       this.observer.observe(this.element, this.config);
       this.enabled = true;
     }
@@ -110,10 +112,10 @@ Snapback.prototype = {
   /**
    * Registers any mutations in the mutation stack as an undo
    */
-  register: function() {
-    if(this.mutations.length > 0) {
+  register() {
+    if (this.mutations.length > 0) {
       // only register a new undo if there are mutations in the stack
-      if(this.undoIndex < this.undos.length - 1) {
+      if (this.undoIndex < this.undos.length - 1) {
         // remove any undos after undoIndex, ie the user
         // has undo'd and a new undo branch/tree is needed
         this.undos = this.undos.slice(0, this.undoIndex + 1);
@@ -139,8 +141,8 @@ Snapback.prototype = {
   /**
    * Redo (if we are not already at the newest change)
    */
-  redo: function() {
-    if(this.enabled && this.undoIndex < this.undos.length - 1) {
+  redo() {
+    if (this.enabled && this.undoIndex < this.undos.length - 1) {
       this.undoRedo(this.undos[++this.undoIndex], false);
     }
   },
@@ -148,10 +150,10 @@ Snapback.prototype = {
   /**
    * Undo (if we are not already at the oldest change)
    */
-  undo: function() {
+  undo() {
     this.register();
 
-    if(this.enabled && this.undoIndex >= 0) {
+    if (this.enabled && this.undoIndex >= 0) {
       this.undoRedo(this.undos[this.undoIndex--], true);
     }
   },
@@ -164,24 +166,24 @@ Snapback.prototype = {
    * @param {Object} undo
    * @param {boolean} [isUndo] - Determines whether we should do or undo `undo`.
    */
-  undoRedo: function(undo, isUndo) {
+  undoRedo(undo, isUndo) {
     this.disable();
 
     // reverse the mutation collection if we are doing undone (we want to execute the mutations
     // in the opposite order to undo them
-    var mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
+    const mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
 
-    mutations.forEach(function(mutation) {
-      switch(mutation.type) {
+    mutations.forEach(function (mutation) {
+      switch (mutation.type) {
         case 'characterData':
-          // update the textContent 
+          // update the textContent
           mutation.target.textContent = isUndo ? mutation.oldValue : mutation.newValue;
           break;
         case 'attributes':
-          // update the attribute 
-          var value = isUndo ? mutation.oldValue : mutation.newValue;
+          // update the attribute
+          const value = isUndo ? mutation.oldValue : mutation.newValue;
 
-          if(value || value === false || value === 0)
+          if (value || value === false || value === 0)
             mutation.target.setAttribute(mutation.attributeName, value);
           else
             mutation.target.removeAttribute(mutation.attributeName);
@@ -189,16 +191,16 @@ Snapback.prototype = {
           break;
         case 'childList':
           // set up correctly what nodes to be added and removed
-          var addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
+          const addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
 
-          toArray(addNodes).forEach(mutation.nextSibling ? function(node) {
+          toArray(addNodes).forEach(mutation.nextSibling ? function (node) {
             mutation.nextSibling.parentNode.insertBefore(node, mutation.nextSibling);
-          } : function(node) {
+          } : function (node) {
             mutation.target.appendChild(node);
           });
 
           // remove all nodes to be removed
-          toArray(isUndo ? mutation.addedNodes : mutation.removedNodes).forEach(function(node) {
+          toArray(isUndo ? mutation.addedNodes : mutation.removedNodes).forEach(function (node) {
             node.parentNode.removeChild(node);
           });
 
