@@ -2,16 +2,21 @@
   "name": "snapback",
   "version": "0.4.1",
   "description": "Undo/redo",
-  "main": "./lib/snapback.js",
+  "main": "./snapback.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rimraf *.js",
+    "lint": "eslint src",
+    "build": "babel src --out-dir .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "npm run clean && npm run build"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/lohfu/snapback.git"
   },
   "keywords": [
-    "Undo",
+    "DOM",
+    "undo",
     "redo",
     "node",
     "commonjs"
@@ -23,6 +28,13 @@
   },
   "homepage": "https://github.com/lohfu/snapback",
   "dependencies": {
-    "lodash": "^4.6.1"
+    "lodash": "^4.11.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.7.5",
+    "eslint": "^2.8.0",
+    "eslint-config-airbnb": "^7.0.0",
+    "eslint-plugin-react": "^4.3.0",
+    "rimraf": "^2.5.2"
   }
 }
