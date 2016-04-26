@@ -33,13 +33,13 @@ const Snapback = function (element, options) {
   if (!MO) return;
 
   // bind `this` to the instance snapback instance inside addMutation,
-  // see line 57
-  bindAll(this, 'addMutation');
+  // see line 54 & 68
+  bindAll(this, 'addMutation', 'register');
 
   // extend the current instance of snapback with some properties
   assign(this, {
-    // this is the config pass to the observe function on the Mutation Observer
-    config: { subtree: true, attributeFilter: [ 'style' ], attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
+    // this is the observe pass to the observe function on the Mutation Observer
+    observe: { subtree: true, attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
     element,
     // the undo stack is a collection of Undo objects
     undos: [],
@@ -50,9 +50,9 @@ const Snapback = function (element, options) {
   }, options);
 
   // instantiate a MutationObserver (this will be started and stopped in this.enable and this.disable respectively
-  this.observer = new MO(function (mutations) {
+  this.observer = new MO(mutations => {
     mutations.forEach(this.addMutation);
-  }.bind(this));
+  });
 };
 
 Snapback.prototype = {
@@ -62,6 +62,12 @@ Snapback.prototype = {
    * @param {MutationRecord} mutation - The mutation to the mutations array
    */
   addMutation(mutation) {
+    if (this.timeout) {
+      clearTimeout(this._timeout);
+
+      this._timeout = setTimeout(this.register, this.timeout);
+    }
+
     switch (mutation.type) {
       case 'characterData':
         // save the new value of the textNode
@@ -104,7 +110,7 @@ Snapback.prototype = {
    */
   enable() {
     if (!this.enabled) {
-      this.observer.observe(this.element, this.config);
+      this.observer.observe(this.element, this.observe);
       this.enabled = true;
     }
   },
@@ -209,7 +215,8 @@ Snapback.prototype = {
     });
 
     // use `isUndo` to determine whether we should use selection before or after mutations
-    isFunction(this.restore) && this.restore(isUndo ? undo.data.before : undo.data.after);
+    if (isFunction(this.restore))
+      this.restore(isUndo ? undo.data.before : undo.data.after);
 
     // reenable
     this.enable();
