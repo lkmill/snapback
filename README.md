@@ -9,9 +9,15 @@ There is a demo plunker. You can view it at
 
 ## Install
 
+It is highly recommended to use NPM and a bundler like browserify, webpack or
+lasso.
+
 ```
 npm install snapback
 ```
+
+If you want, you can use npmcdn (<https://npmcdn.com/snapback@latest/dist/snapback.min.js>, or
+<https://npmcdn.com/snapback@latest/dist/snapback.js>).
 
 ## Use
 
