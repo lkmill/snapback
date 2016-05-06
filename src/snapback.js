@@ -10,11 +10,7 @@
  * @module snapback
  */
 
-const bindAll = require('lodash/bindAll'),
-  isFunction = require('lodash/isFunction'),
-  assign = require('lodash/assign'),
-  toArray = require('lodash/toArray'),
-  last = require('lodash/last');
+const assign = require('object-assign');
 
 /**
  * Creates a new Snapback instance that will handle undo's and redo's for `element`s DOM sub tree
@@ -32,9 +28,12 @@ const Snapback = function (element, options) {
   // stop everything if no MutationObserver is found
   if (!MO) return;
 
-  // bind `this` to the instance snapback instance inside addMutation,
-  // see line 54 & 68
-  bindAll(this, 'addMutation', 'register');
+  /* bind `this` to the instance snapback instance inside addMutation,
+   * register
+   * see line 56 & 70
+   */
+  this.register = this.register.bind(this);
+  this.addMutation = this.addMutation.bind(this);
 
   // extend the current instance of snapback with some properties
   assign(this, {
@@ -76,7 +75,7 @@ Snapback.prototype = {
         // save the new value of the textNode
         mutation.newValue = mutation.target.textContent;
 
-        const lastMutation = last(this.mutations);
+        const lastMutation = this.mutations[this.mutations.length - 1];
 
         if (lastMutation && lastMutation.type === 'characterData' && lastMutation.target === mutation.target && lastMutation.newValue === mutation.oldValue) {
           // current and last mutations were characterData mutations on the same textNode.
@@ -132,7 +131,7 @@ Snapback.prototype = {
 
       // push a new Undo object to the undo stack
       this.undos.push({
-        data: isFunction(this.store) ? {
+        data: this.store instanceof Function ? {
           before: this.data,
           after: this.store()
         } : undefined,
@@ -202,14 +201,14 @@ Snapback.prototype = {
           // set up correctly what nodes to be added and removed
           const addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
 
-          toArray(addNodes).forEach(mutation.nextSibling ? function (node) {
+          Array.prototype.slice.call(addNodes).forEach(mutation.nextSibling ? function (node) {
             mutation.nextSibling.parentNode.insertBefore(node, mutation.nextSibling);
           } : function (node) {
             mutation.target.appendChild(node);
           });
 
           // remove all nodes to be removed
-          toArray(isUndo ? mutation.addedNodes : mutation.removedNodes).forEach(function (node) {
+          Array.prototype.slice.call(isUndo ? mutation.addedNodes : mutation.removedNodes).forEach(function (node) {
             node.parentNode.removeChild(node);
           });
 
@@ -218,7 +217,7 @@ Snapback.prototype = {
     });
 
     // use `isUndo` to determine whether we should use selection before or after mutations
-    if (isFunction(this.restore))
+    if (this.restore instanceof Function)
       this.restore(isUndo ? undo.data.before : undo.data.after);
 
     // reenable
