@@ -2,6 +2,11 @@
 
 DOM Undo/Redo library.
 
+## Demo
+
+There is a demo plunker. You can view it at
+<https://embed.plnkr.co/Dl84lxM1fYyldOkkZv9a/>.
+
 ## Install
 
 ```
