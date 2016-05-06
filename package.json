@@ -2,13 +2,16 @@
   "name": "snapback",
   "version": "0.4.1",
   "description": "Undo/redo",
-  "main": "./snapback.js",
+  "main": "./lib/snapback.js",
   "scripts": {
-    "clean": "rimraf *.js",
+    "clean": "rimraf *.js lib dist",
     "lint": "eslint src",
-    "build": "babel src --out-dir .",
+    "build": "npm run build:commonjs && npm run build:umd && npm run build:umd:min",
+    "build:commonjs": "babel src --out-dir lib",
+    "build:umd": "mkdir -p dist && browserify -t babelify src/snapback.js --standalone Snapback | derequire > dist/snapback.js",
+    "build:umd:min": "mkdir -p dist && browserify -t babelify src/snapback.js --standalone Snapback | derequire | uglifyjs -c -m > dist/snapback.min.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "npm run clean && npm run build"
+    "prepublish": "npm run clean && npm run lint && npm run build"
   },
   "repository": {
     "type": "git",
@@ -32,9 +35,13 @@
   },
   "devDependencies": {
     "babel-cli": "^6.7.7",
+    "babelify": "^7.3.0",
+    "browserify": "^13.0.0",
+    "derequire": "^2.0.3",
     "eslint": "^2.8.0",
     "eslint-config-airbnb-base": "^1.0.3",
     "eslint-plugin-import": "^1.6.0",
-    "rimraf": "^2.5.2"
+    "rimraf": "^2.5.2",
+    "uglify-js": "^2.6.2"
   }
 }
