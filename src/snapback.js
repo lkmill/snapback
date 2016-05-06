@@ -41,6 +41,9 @@ const Snapback = function (element, options) {
     // this is the observe pass to the observe function on the Mutation Observer
     observe: { subtree: true, attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
     element,
+    // if timeout > 0, mutations will automatically be registered as undo's
+    // after [timeout] ms of inactivity (no new mutations)
+    timeout: 0,
     // the undo stack is a collection of Undo objects
     undos: [],
     // the mutations stack holds all mutations that have not yet been registered in an undo
