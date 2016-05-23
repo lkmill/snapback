@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Snapback is a DOM undo and redo library. It uses
  * a MutationObserver to observe changes to a DOM Element's sub tree.
@@ -10,7 +8,7 @@
  * @module snapback
  */
 
-const assign = require('object-assign');
+import assign from 'object-assign';
 
 /**
  * Creates a new Snapback instance that will handle undo's and redo's for `element`s DOM sub tree
@@ -225,4 +223,4 @@ Snapback.prototype = {
   }
 };
 
-module.exports = Snapback;
+export default Snapback;

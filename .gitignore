@@ -35,6 +35,8 @@ bower_components
 
 /dist
 
+/es
+
 /lib
 
 /*.js
