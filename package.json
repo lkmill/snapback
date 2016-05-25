@@ -1,6 +1,6 @@
 {
   "name": "snapback",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Undo/redo",
   "main": "./lib/snapback.js",
   "jsnext:main": "./es/snapback.js",
