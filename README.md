@@ -1,6 +1,6 @@
 # snapback
 
-DOM Undo/Redo library.
+DOM Undo/Redo library, weighing in at 1.4kb (UMD bundle, minified and gzipped).
 
 ## Demo
 
@@ -9,7 +9,7 @@ There is a demo plunker. You can view it at
 
 ## Install
 
-It is highly recommended to use NPM and a bundler like browserify, webpack or
+It is highly recommended to use NPM and a bundler like rollup, browserify, webpack or
 lasso.
 
 ```
@@ -134,3 +134,9 @@ And then, inside `undoRedo` it is applied with
 ```
 isFunction(this.restore) && this.restore(isUndo ? undo.data.before : undo.data.after);
 ```
+
+## Size
+
+                                   | Minified  | Compressed
+-----------------------------------|-----------|-----------
+Snapback (UMD build, all deps)     | 3.62kb    | 1.4kb    
