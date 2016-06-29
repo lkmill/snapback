@@ -28,7 +28,7 @@ const Snapback = function (element, options) {
 
   /* bind `this` to the instance snapback instance inside addMutation,
    * register
-   * see line 56 & 70
+   * see line 54 & 68
    */
   this.register = this.register.bind(this);
   this.addMutation = this.addMutation.bind(this);
@@ -170,13 +170,14 @@ Snapback.prototype = {
    * determine which Undo to redo or undo.
    *
    * @param {Object} undo
-   * @param {boolean} [isUndo] - Determines whether we should do or undo `undo`.
+   * @param {boolean} [isUndo] - Determines whether we should do undo or redo
    */
   undoRedo(undo, isUndo) {
     this.disable();
 
-    // reverse the mutation collection if we are doing undone (we want to execute the mutations
-    // in the opposite order to undo them
+    /* reverse the mutation collection if we are doing undo (we want to
+     * execute the mutations in the opposite order to undo them
+     */
     const mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
 
     mutations.forEach(function (mutation) {
@@ -214,7 +215,9 @@ Snapback.prototype = {
       }
     });
 
-    // use `isUndo` to determine whether we should use selection before or after mutations
+    /* use `isUndo` to determine whether we should use selection before (undo)
+     * or after mutations (redo)
+     */
     if (this.restore instanceof Function)
       this.restore(isUndo ? undo.data.before : undo.data.after);
 
