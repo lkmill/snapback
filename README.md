@@ -9,14 +9,18 @@ There is a demo plunker. You can view it at
 
 ## Install
 
-It is highly recommended to use NPM and a bundler like rollup, browserify, webpack or
-lasso.
+It is highly recommended to use NPM and a bundler like
+[https://github.com/rollup/rollup](rollup),
+[https://github.com/substack/node-browserify](browserify),
+[https://github.com/webpack/webpack](webpack) or
+[https://github.com/lasso-js/lasso](lasso).
 
 ```
-npm install snapback
+$ npm install snapback
 ```
 
-If you want, you can use unpkg (<https://unpkg.com/snapback@latest/dist/snapback.min.js>, or
+If you want to use a UMD bundle instead, you can use unpkg
+(<https://unpkg.com/snapback@latest/dist/snapback.min.js>, or
 <https://unpkg.com/snapback@latest/dist/snapback.js>).
 
 ## Use
@@ -40,6 +44,7 @@ snapback.redo();
 
 // mutations observers are pretty intense. try to have as few active as possible
 snapback.disable();
+
 ```
 
 When snapback is enabled, it will store all mutations to a mutations array
@@ -68,7 +73,7 @@ the default is:
 }
 ```
 
-NOTE: if you observe attributes or characterData, you HAVE to add the option
+NOTE: if you observe attributes or characterData, you MUST add the option
 for their old value.
 
 So, to create a snapback instance that only watches for node insertions
@@ -77,7 +82,7 @@ and removals, and automatically registers undos after 1 sec:
 ```js
 const snapback = new Snapback(someElement, {
   observe: { subtree: true, childList: true },
-  timout: 1000
+  timeout: 1000
 });
 ```
 
@@ -101,25 +106,25 @@ keystrokes or mouse up (selections).
 
 ```js
 const snapback = new Snapback(this.el, {
-	/**
+  /**
    * This has to save to `this.data`!
-	 */
-	store: function(data) {
-		return (this.data = (data || selektr.get()));
-	},
+   */
+  store: function(data) {
+    return (this.data = (data || selektr.get()));
+  },
 
-	restore: function(data) {
-		selektr.restore(data, true);
+  restore: function(data) {
+    selektr.restore(data, true);
 
     // restored selection is now current selection, ie save it.
     this.store(data);
-	},
+  },
 });
 ```
 
 The actual code that does this simply looks like this:
 
-```
+```js
 this.undos.push({
   data: isFunction(this.store) ? {
     before: this.data,
@@ -131,7 +136,7 @@ this.undos.push({
 
 And then, inside `undoRedo` it is applied with
 
-```
+```js
 isFunction(this.restore) && this.restore(isUndo ? undo.data.before : undo.data.after);
 ```
 
