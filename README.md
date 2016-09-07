@@ -16,8 +16,8 @@ lasso.
 npm install snapback
 ```
 
-If you want, you can use npmcdn (<https://npmcdn.com/snapback@latest/dist/snapback.min.js>, or
-<https://npmcdn.com/snapback@latest/dist/snapback.js>).
+If you want, you can use unpkg (<https://unpkg.com/snapback@latest/dist/snapback.min.js>, or
+<https://unpkg.com/snapback@latest/dist/snapback.js>).
 
 ## Use
 
