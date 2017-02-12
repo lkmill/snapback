@@ -8,8 +8,6 @@
  * @module snapback
  */
 
-import assign from 'object-assign';
-
 /**
  * Creates a new Snapback instance that will handle undo's and redo's for `element`s DOM sub tree
  *
@@ -34,7 +32,7 @@ const Snapback = function (element, options) {
   this.addMutation = this.addMutation.bind(this);
 
   // extend the current instance of snapback with some properties
-  assign(this, {
+  Object.assign(this, {
     // this is the observe pass to the observe function on the Mutation Observer
     observe: { subtree: true, attributes: true, attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true },
     element,
@@ -50,7 +48,7 @@ const Snapback = function (element, options) {
   }, options);
 
   // instantiate a MutationObserver (this will be started and stopped in this.enable and this.disable respectively
-  this.observer = new MO(mutations => {
+  this.observer = new MO((mutations) => {
     mutations.forEach(this.addMutation);
   });
 };
@@ -180,7 +178,7 @@ Snapback.prototype = {
      */
     const mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
 
-    mutations.forEach(function (mutation) {
+    mutations.forEach((mutation) => {
       switch (mutation.type) {
         case 'characterData':
           // update the textContent
@@ -199,15 +197,16 @@ Snapback.prototype = {
         case 'childList':
           // set up correctly what nodes to be added and removed
           const addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
+          const removeNodes = isUndo ? mutation.addedNodes : mutation.removedNodes;
 
-          Array.prototype.slice.call(addNodes).forEach(mutation.nextSibling ? function (node) {
+          Array.from(addNodes).forEach(mutation.nextSibling ? (node) => {
             mutation.nextSibling.parentNode.insertBefore(node, mutation.nextSibling);
-          } : function (node) {
+          } : (node) => {
             mutation.target.appendChild(node);
           });
 
           // remove all nodes to be removed
-          Array.prototype.slice.call(isUndo ? mutation.addedNodes : mutation.removedNodes).forEach(function (node) {
+          Array.from(removeNodes).forEach(function (node) {
             node.parentNode.removeChild(node);
           });
 
@@ -218,8 +217,9 @@ Snapback.prototype = {
     /* use `isUndo` to determine whether we should use selection before (undo)
      * or after mutations (redo)
      */
-    if (this.restore instanceof Function)
+    if (this.restore instanceof Function) {
       this.restore(isUndo ? undo.data.before : undo.data.after);
+    }
 
     // reenable
     this.enable();
