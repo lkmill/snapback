@@ -19,17 +19,17 @@
  **/
 const Snapback = function (element, options) {
   // determine which version of MutationObserver to use
-  const MO = typeof MutationObserver !== 'undefined' ? MutationObserver : (typeof WebKitMutationObserver !== 'undefined' ? WebKitMutationObserver : undefined);
+  const MO = typeof MutationObserver !== 'undefined' ? MutationObserver : (typeof WebKitMutationObserver !== 'undefined' ? WebKitMutationObserver : undefined)
 
   // stop everything if no MutationObserver is found
-  if (!MO) return;
+  if (!MO) return
 
   /* bind `this` to the instance snapback instance inside addMutation,
    * register
    * see line 54 & 68
    */
-  this.register = this.register.bind(this);
-  this.addMutation = this.addMutation.bind(this);
+  this.register = this.register.bind(this)
+  this.addMutation = this.addMutation.bind(this)
 
   // extend the current instance of snapback with some properties
   Object.assign(this, {
@@ -45,13 +45,13 @@ const Snapback = function (element, options) {
     mutations: [],
     // pointer to where in the undo history we are
     undoIndex: -1,
-  }, options);
+  }, options)
 
   // instantiate a MutationObserver (this will be started and stopped in this.enable and this.disable respectively
   this.observer = new MO((mutations) => {
-    mutations.forEach(this.addMutation);
-  });
-};
+    mutations.forEach(this.addMutation)
+  })
+}
 
 Snapback.prototype = {
   /**
@@ -59,35 +59,35 @@ Snapback.prototype = {
    *
    * @param {MutationRecord} mutation - The mutation to the mutations array
    */
-  addMutation(mutation) {
+  addMutation (mutation) {
     if (this.timeout) {
-      clearTimeout(this._timeout);
+      clearTimeout(this._timeout)
 
-      this._timeout = setTimeout(this.register, this.timeout);
+      this._timeout = setTimeout(this.register, this.timeout)
     }
 
     switch (mutation.type) {
       case 'characterData':
         // save the new value of the textNode
-        mutation.newValue = mutation.target.textContent;
+        mutation.newValue = mutation.target.textContent
 
-        const lastMutation = this.mutations[this.mutations.length - 1];
+        const lastMutation = this.mutations[this.mutations.length - 1]
 
         if (lastMutation && lastMutation.type === 'characterData' && lastMutation.target === mutation.target && lastMutation.newValue === mutation.oldValue) {
           // current and last mutations were characterData mutations on the same textNode.
           // simply set newValue of lastMutation to newValue of current
-          lastMutation.newValue = mutation.newValue;
-          return;
+          lastMutation.newValue = mutation.newValue
+          return
         }
-        break;
+        break
       case 'attributes':
         // save new value of the updated attribute
-        mutation.newValue = mutation.target.getAttribute(mutation.attributeName);
-        break;
+        mutation.newValue = mutation.target.getAttribute(mutation.attributeName)
+        break
     }
 
     // add a new mutation to the stack
-    this.mutations.push(mutation);
+    this.mutations.push(mutation)
   },
 
   /**
@@ -95,10 +95,10 @@ Snapback.prototype = {
    * any mutations in the mutation stack. Essentially
    * this just callc MutationObserver.disconnect().
    */
-  disable() {
+  disable () {
     if (this.enabled) {
-      this.observer.disconnect();
-      this.enabled = false;
+      this.observer.disconnect()
+      this.enabled = false
     }
   },
 
@@ -106,59 +106,59 @@ Snapback.prototype = {
    * Enable observering mutations to the DOM. Essentially
    * just calls MutationObserver.observe().
    */
-  enable() {
+  enable () {
     if (!this.enabled) {
-      this.observer.observe(this.element, this.observe);
-      this.enabled = true;
+      this.observer.observe(this.element, this.observe)
+      this.enabled = true
     }
   },
 
   /**
    * Registers any mutations in the mutation stack as an undo
    */
-  register() {
+  register () {
     if (this.mutations.length > 0) {
       // only register a new undo if there are mutations in the stack
       if (this.undoIndex < this.undos.length - 1) {
         // remove any undos after undoIndex, ie the user
         // has undo'd and a new undo branch/tree is needed
-        this.undos = this.undos.slice(0, this.undoIndex + 1);
+        this.undos = this.undos.slice(0, this.undoIndex + 1)
       }
 
       // push a new Undo object to the undo stack
       this.undos.push({
         data: this.store instanceof Function ? {
           before: this.data,
-          after: this.store()
+          after: this.store(),
         } : undefined,
-        mutations: this.mutations
-      });
+        mutations: this.mutations,
+      })
 
       // reset the mutations stack
-      this.mutations = [];
+      this.mutations = []
 
       // update the undoIndex
-      this.undoIndex = this.undos.length - 1;
+      this.undoIndex = this.undos.length - 1
     }
   },
 
   /**
    * Redo (if we are not already at the newest change)
    */
-  redo() {
+  redo () {
     if (this.enabled && this.undoIndex < this.undos.length - 1) {
-      this.undoRedo(this.undos[++this.undoIndex], false);
+      this.undoRedo(this.undos[++this.undoIndex], false)
     }
   },
 
   /**
    * Undo (if we are not already at the oldest change)
    */
-  undo() {
-    this.register();
+  undo () {
+    this.register()
 
     if (this.enabled && this.undoIndex >= 0) {
-      this.undoRedo(this.undos[this.undoIndex--], true);
+      this.undoRedo(this.undos[this.undoIndex--], true)
     }
   },
 
@@ -170,60 +170,57 @@ Snapback.prototype = {
    * @param {Object} undo
    * @param {boolean} [isUndo] - Determines whether we should do undo or redo
    */
-  undoRedo(undo, isUndo) {
-    this.disable();
+  undoRedo (undo, isUndo) {
+    this.disable()
 
     /* reverse the mutation collection if we are doing undo (we want to
      * execute the mutations in the opposite order to undo them
      */
-    const mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations;
+    const mutations = isUndo ? undo.mutations.slice(0).reverse() : undo.mutations
 
     mutations.forEach((mutation) => {
       switch (mutation.type) {
         case 'characterData':
           // update the textContent
-          mutation.target.textContent = isUndo ? mutation.oldValue : mutation.newValue;
-          break;
+          mutation.target.textContent = isUndo ? mutation.oldValue : mutation.newValue
+          break
         case 'attributes':
           // update the attribute
-          const value = isUndo ? mutation.oldValue : mutation.newValue;
+          const value = isUndo ? mutation.oldValue : mutation.newValue
 
-          if (value || value === false || value === 0)
-            mutation.target.setAttribute(mutation.attributeName, value);
-          else
-            mutation.target.removeAttribute(mutation.attributeName);
+          if (value || value === false || value === 0) { mutation.target.setAttribute(mutation.attributeName, value) } else { mutation.target.removeAttribute(mutation.attributeName) }
 
-          break;
+          break
         case 'childList':
           // set up correctly what nodes to be added and removed
-          const addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes;
-          const removeNodes = isUndo ? mutation.addedNodes : mutation.removedNodes;
+          const addNodes = isUndo ? mutation.removedNodes : mutation.addedNodes
+          const removeNodes = isUndo ? mutation.addedNodes : mutation.removedNodes
 
           Array.from(addNodes).forEach(mutation.nextSibling ? (node) => {
-            mutation.nextSibling.parentNode.insertBefore(node, mutation.nextSibling);
+            mutation.nextSibling.parentNode.insertBefore(node, mutation.nextSibling)
           } : (node) => {
-            mutation.target.appendChild(node);
-          });
+            mutation.target.appendChild(node)
+          })
 
           // remove all nodes to be removed
           Array.from(removeNodes).forEach(function (node) {
-            node.parentNode.removeChild(node);
-          });
+            node.parentNode.removeChild(node)
+          })
 
-          break;
+          break
       }
-    });
+    })
 
     /* use `isUndo` to determine whether we should use selection before (undo)
      * or after mutations (redo)
      */
     if (this.restore instanceof Function) {
-      this.restore(isUndo ? undo.data.before : undo.data.after);
+      this.restore(isUndo ? undo.data.before : undo.data.after)
     }
 
     // reenable
-    this.enable();
-  }
-};
+    this.enable()
+  },
+}
 
-export default Snapback;
+export default Snapback
