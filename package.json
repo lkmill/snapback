@@ -2,18 +2,17 @@
   "name": "snapback",
   "version": "0.7.0",
   "description": "Undo/redo",
-  "main": "./lib/snapback.js",
-  "jsnext:main": "./es/snapback.js",
+  "main": "./lib/index",
   "scripts": {
-    "clean": "rimraf es lib dist",
-    "lint": "eslint src",
-    "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
-    "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir lib",
-    "build:es": "BABEL_ENV=es babel src --out-dir es",
-    "build:umd": "mkdir -p dist && BABEL_ENV=es rollup -c -o dist/snapback.js",
-    "build:umd:min": "mkdir -p dist && BABEL_ENV=es rollup -c | uglifyjs -c -m > dist/snapback.min.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "npm run clean && npm run lint && npm run build"
+    "clean": "rimraf dist lib",
+    "lint": "eslint --ext .js --ext .mjs src",
+    "build": "npm run build:cjs && npm run build:esm && npm run build:umd && npm run build:umd:min",
+    "build:cjs": "BABEL_ENV=cjs babel src --out-dir lib",
+    "build:esm": "BABEL_ENV=esm babel src --keep-file-extension --out-dir lib",
+    "build:umd": "mkdir -p dist && BABEL_ENV=umd rollup -c -o dist/snapback.js",
+    "build:umd:min": "mkdir -p dist && BABEL_ENV=umd rollup -c | uglifyjs -c -m > dist/snapback.min.js",
+    "prepublish": "npm run clean && npm run lint && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -34,22 +33,19 @@
   "homepage": "https://github.com/lohfu/snapback",
   "dependencies": {},
   "devDependencies": {
-    "babel-cli": "^6.22.2",
+    "@babel/cli": "^7.0.0-beta.46",
+    "@babel/core": "^7.0.0-beta.46",
+    "@babel/preset-env": "^7.0.0-beta.46",
     "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-preset-es2015": "^6.22.0",
-    "babel-preset-es2015-rollup": "^3.0.0",
-    "derequire": "^2.0.6",
     "eslint": "^4.19.1",
     "eslint-config-standard": "^11.0.0",
     "eslint-plugin-import": "^2.11.0",
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-promise": "^3.7.0",
     "eslint-plugin-standard": "^3.1.0",
-    "rimraf": "^2.5.4",
-    "rollup": "^0.41.4",
-    "rollup-plugin-babel": "^2.7.1",
-    "rollup-plugin-commonjs": "^7.0.0",
-    "rollup-plugin-node-resolve": "^2.0.0",
-    "uglify-js": "^2.7.5"
+    "rimraf": "^2.6.2",
+    "rollup": "^0.58.2",
+    "rollup-plugin-babel": "^4.0.0-beta.2",
+    "uglify-js": "^3.3.23"
   }
 }

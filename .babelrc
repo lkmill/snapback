@@ -1,13 +1,22 @@
 {
   "env": {
-    "commonjs": {
-      "presets": [ "es2015" ],
+    "cjs": {
+      "presets": [
+        [ "@babel/env", { "shippedProposals": true } ]
+      ],
       "plugins": [
         "add-module-exports"
       ]
     },
-    "es": {
-      "presets": [ "es2015-rollup" ]
+
+    "esm": {
+      "presets": [
+        [ "@babel/env", { "modules": false, "shippedProposals": true } ]
+      ]
+    },
+
+    "umd": {
+      "presets": [[ "@babel/env", { "modules": false, "shippedProposals": true } ]]
     }
   }
 }
